@@ -1,5 +1,5 @@
-export type UserRole = 'farmer' | 'dealer' | 'vet' | 'admin' | null;
-export type ViewState = 'login' | 'register' | 'dashboard' | 'upload' | 'results' | 'live-feed' | 'flock' | 'insights' | 'logs' | 'settings' | 'dealer' | 'vet' | 'admin';
+export type UserRole = 'farmer' | 'dealer' | 'vet' | 'admin';
+export type ViewState = 'login' | 'dashboard' | 'upload' | 'results' | 'history' | 'flock' | 'dealer' | 'vet' | 'admin' | 'feedstock';
 
 export interface Flock {
     id: string;
@@ -8,6 +8,8 @@ export interface Flock {
     age: number;
     status: 'Active' | 'Sold' | 'Issue';
     birdCount: number;
+    /** Optional: flock name suggested/created from an AI analysis */
+    linkedAnalysisDate?: string;
 }
 
 export interface DailyLog {
@@ -23,8 +25,23 @@ export interface AiDetection {
     id: number;
     class: string;
     confidence: number;
+    method?: string;   // 'YOLO' | 'CV-Blob'
     x: number;
     y: number;
     w: number;
     h: number;
+}
+
+export interface AnalysisResult {
+    filename: string;
+    bird_count: number;
+    detection_method?: string;   // 'YOLO' | 'CV-Blob'
+    status: string;
+    heatmap_url: string;
+    mock_heatmap_url: string;
+    detections: AiDetection[];
+    density_score: number;
+    density_label: 'Low' | 'Medium' | 'High';
+    insights: string[];
+    message: string;
 }

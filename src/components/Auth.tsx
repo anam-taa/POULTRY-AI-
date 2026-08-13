@@ -8,21 +8,81 @@ interface AuthProps {
 export function Auth({ onLoginSuccess }: AuthProps) {
     const [mode, setMode] = useState<'login' | 'register'>('login');
     const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-    const [registerForm, setRegisterForm] = useState({ role: 'farmer', name: '', farmName: '', password: '' });
+    const [registerForm, setRegisterForm] = useState({ role: 'farmer', name: '', email: '', farmName: '', password: '' });
 
-    const quickLogin = (role: string) => {
-        const mockUsers: Record<string, { name: string; role: UserRole }> = {
-            farmer: { name: 'Rahul Farm Owner', role: 'farmer' },
-            dealer: { name: 'AgriCorp Dealer', role: 'dealer' },
-            vet: { name: 'Dr. Emily Vet', role: 'vet' },
-            admin: { name: 'System Admin', role: 'admin' },
-        };
-        onLoginSuccess(mockUsers[role]);
+    const quickLogin = async (role: string) => {
+        try {
+            // Attempt to login with default credentials (username=role, password=role)
+            const formData = new FormData();
+            formData.append('username', role);
+            formData.append('password', role); // Assumes we seeded users with same password
+
+            const response = await fetch('http://localhost:8000/token', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('token', data.access_token);
+                onLoginSuccess({ name: `${role.charAt(0).toUpperCase() + role.slice(1)} (Demo)`, role: data.role });
+            } else {
+                // Determine if we should register the demo user (first run)
+                // Actually, backend now seeds 'farmer', so this should just work for farmer.
+                alert(`Quick Login failed for ${role}. Please register manually.`);
+            }
+        } catch (error) {
+            console.error("Quick login error", error);
+        }
     };
 
-    const onLoginSubmit = (e: React.FormEvent) => {
+    const onLoginSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        quickLogin('farmer');
+        try {
+            const formData = new FormData();
+            formData.append('username', loginForm.email);
+            formData.append('password', loginForm.password);
+
+            const response = await fetch('http://localhost:8000/token', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                // data = { access_token, token_type, role }
+                localStorage.setItem('token', data.access_token);
+                onLoginSuccess({ name: loginForm.email, role: data.role });
+            } else {
+                alert("Login failed! Check credentials.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Connection error");
+        }
+    };
+
+    const onRegisterSubmit = async () => {
+        try {
+            const response = await fetch('http://localhost:8000/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: registerForm.email || registerForm.name.replace(/\s/g, '').toLowerCase(), // Hacky default username
+                    password: registerForm.password
+                    // In real app, pass role/farmName too
+                })
+            });
+            if (response.ok) {
+                alert("Registration successful! Please login.");
+                setMode('login');
+            } else {
+                const err = await response.json();
+                alert("Error: " + err.detail);
+            }
+        } catch (e) {
+            alert("Connection error");
+        }
     };
 
     return (
@@ -99,12 +159,26 @@ export function Auth({ onLoginSuccess }: AuthProps) {
                         </div>
                     </div>
                     <div className="space-y-3">
-                        <input type="text" placeholder="Full Name" className="block w-full rounded-md border-slate-300 bg-slate-50 border p-2" />
-                        <input type="text" placeholder="Farm / Business Name" className="block w-full rounded-md border-slate-300 bg-slate-50 border p-2" />
-                        <input type="password" placeholder="Password" className="block w-full rounded-md border-slate-300 bg-slate-50 border p-2" />
+                        <div className="space-y-3">
+                            <input
+                                type="text"
+                                placeholder="Username / Email"
+                                value={registerForm.email || ''}
+                                onChange={e => setRegisterForm({ ...registerForm, email: e.target.value })}
+                                className="block w-full rounded-md border-slate-300 bg-slate-50 border p-2"
+                            />
+                            <input type="text" placeholder="Full Name" className="block w-full rounded-md border-slate-300 bg-slate-50 border p-2" />
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                value={registerForm.password}
+                                onChange={e => setRegisterForm({ ...registerForm, password: e.target.value })}
+                                className="block w-full rounded-md border-slate-300 bg-slate-50 border p-2"
+                            />
+                        </div>
+                        <button onClick={onRegisterSubmit} className="mt-6 w-full py-2 bg-emerald-600 text-white rounded-md">Create Account</button>
+                        <button onClick={() => setMode('login')} className="mt-2 w-full py-2 text-slate-500 text-sm">Back to Login</button>
                     </div>
-                    <button onClick={() => setMode('login')} className="mt-6 w-full py-2 bg-emerald-600 text-white rounded-md">Continue</button>
-                    <button onClick={() => setMode('login')} className="mt-2 w-full py-2 text-slate-500 text-sm">Back to Login</button>
                 </div>
             )}
         </div>

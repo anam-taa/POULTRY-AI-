@@ -19,6 +19,8 @@ export function Sidebar({ currentUser, currentView, onNavigate, onLogout }: Side
                 { view: 'dashboard', label: 'Dashboard', icon: '📊' },
                 { view: 'upload', label: 'Upload Image', icon: '📷' },
                 { view: 'flock', label: 'Flock Mgmt', icon: '🐔' },
+                { view: 'feedstock', label: 'Feed & Silo', icon: '🌾' },
+                { view: 'history', label: 'History', icon: '🕒' },
                 { view: 'results', label: 'AI Insights', icon: '🧠' },
                 ...common
             ];

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
+import type { AnalysisResult } from '../types';
+
 interface UploadProps {
-    onAnalysisComplete: (image: string | ArrayBuffer) => void;
+    onAnalysisComplete: (result: AnalysisResult) => void;
 }
 
 export function Upload({ onAnalysisComplete }: UploadProps) {
@@ -36,6 +38,9 @@ export function Upload({ onAnalysisComplete }: UploadProps) {
 
             const response = await fetch('http://localhost:8000/upload', {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
                 body: formData,
             });
 
@@ -43,11 +48,8 @@ export function Upload({ onAnalysisComplete }: UploadProps) {
                 const data = await response.json();
                 console.log("Analysis Result:", data);
 
-                // Pass the generated heatmap URL to the Results component
-                // We use the 'heatmap_url' from the backend response
-                const resultImage = data.heatmap_url || data.mock_heatmap_url || uploadedImage;
-
-                onAnalysisComplete(resultImage);
+                // Pass the full result object to the App
+                onAnalysisComplete(data);
             } else {
                 console.error("Upload failed");
                 alert("Failed to connect to AI Backend");
@@ -88,7 +90,10 @@ export function Upload({ onAnalysisComplete }: UploadProps) {
                             {isAnalyzing && (
                                 <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10">
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
-                                    <div className="text-white font-mono animate-pulse">Running YOLOv11 Model...</div>
+                                    <div className="text-white font-mono animate-pulse text-center">
+                                        <div>🔬 Running Hybrid Bird Detection...</div>
+                                        <div className="text-xs mt-1 text-white/60">YOLOv8 + CV White-Blob Analysis</div>
+                                    </div>
                                 </div>
                             )}
                         </div>
